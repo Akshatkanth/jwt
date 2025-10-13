@@ -1,11 +1,11 @@
 const jwt = require('jsonwebtoken')
-const customApiErrors = require('../errors/custom-error')
+const CustomAPIError = require('../errors/custom-error')
 
 const login = async(req, res) => {
     const {username, password} = req.body
 
     if(!username || !password){
-        throw new customApiErrors('please provide email and password', 400)
+        throw new CustomAPIError('please provide username and password', 400)
     }
 
     const id = new Date().getDate()
@@ -15,11 +15,33 @@ const login = async(req, res) => {
 
     
     res.status(200).json({msg:'user created',token});
+    console.log(req.body)
 }
 
 const dashboard = async (req,res) => {
-    const luckyNumber = Math.floor(Math.random()*100)
-    res.status(200).json({Msg:`Hello, testing.. `, secret : `Here is your authorised data, your lucky number is: ${luckyNumber}`})
+
+    const authHeader = req.headers.authorization;
+
+    if(!authHeader || !authHeader.startsWith('Bearer')){
+        throw new CustomAPIError('no token provided', 401)
+    }
+
+    const token = authHeader.split(' ')[1]
+    
+
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET)
+        
+        const luckyNumber = Math.floor(Math.random()*100)
+         
+        res.status(200).json({Msg:`Hello, ${decoded.username} `
+        , secret : `Here is your authorised data, your lucky number is: ${luckyNumber}`})
+    } catch (error) {
+        throw new CustomAPIError('not authorised to access this route', 401)
+    }
+
+    
 }
 
 module.exports = {
